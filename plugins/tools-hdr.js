@@ -1,140 +1,39 @@
-import FormData from "form-data";
-import Jimp from "jimp";
+// Credits By https://github.com/Xnuvers007
+import fs from 'fs';
+import fetch from 'node-fetch';
+import FormData from 'form-data';
+import deepai from 'deepai';
 
-async function processing(urlPath, method) {
-	return new Promise(async (resolve, reject) => {
-		let Methods = ["enhance", "recolor", "dehaze"];
-		Methods.includes(method) ? (method = method) : (method = Methods[0]);
-		let buffer,
-			Form = new FormData(),
-			scheme = "https" + "://" + "inferenceengine" + ".vyro" + ".ai/" + method;
-		Form.append("model_version", 1, {
-			"Content-Transfer-Encoding": "binary",
-			contentType: "multipart/form-data; charset=uttf-8",
-		});
-		Form.append("image", Buffer.from(urlPath), {
-			filename: "enhance_image_body.jpg",
-			contentType: "image/jpeg",
-		});
-		Form.submit(
-			{
-				url: scheme,
-				host: "inferenceengine" + ".vyro" + ".ai",
-				path: "/" + method,
-				protocol: "https:",
-				headers: {
-					"User-Agent": "okhttp/4.9.3",
-					Connection: "Keep-Alive",
-					"Accept-Encoding": "gzip",
-				},
-			},
-			function (err, res) {
-				if (err) reject();
-				let data = [];
-				res
-					.on("data", function (chunk, resp) {
-						data.push(chunk);
-					})
-					.on("end", () => {
-						resolve(Buffer.concat(data));
-					});
-				res.on("error", (e) => {
-					reject();
-				});
-			}
-		);
-	});
-}
-let handler = async (m, { conn, usedPrefix, command }) => {
-	switch (command) {
-		case "remini2":
-			{
-				conn.enhancer = conn.enhancer ? conn.enhancer : {};
-				if (m.sender in conn.enhancer)
-					throw "Masih Ada Proses Yang Belum Selesai Kak, Silahkan Tunggu Sampai Selesai Yah >//<";
-				let q = m.quoted ? m.quoted : m;
-				let mime = (q.msg || q).mimetype || q.mediaType || "";
-				if (!mime)
-					throw `Fotonya Mana Kak?`;
-				if (!/image\/(jpe?g|png)/.test(mime))
-					throw `Mime ${mime} tidak support`;
-				else conn.enhancer[m.sender] = true;
-				m.reply("Proses Kak...");
-				let img = await q.download?.();
-				let error;
-				try {
-					const This = await processing(img, "enhance");
-					conn.sendFile(m.chat, This, "", "Sudah Jadi Kak >//<", m);
-				} catch (er) {
-					error = true;
-				} finally {
-					if (error) {
-						m.reply("Proses Gagal :(");
-					}
-					delete conn.enhancer[m.sender];
-				}
-			}
-			break;
-		case "color":
-			{
-				conn.recolor = conn.recolor ? conn.recolor : {};
-				if (m.sender in conn.recolor)
-					throw "Masih Ada Proses Yang Belum Selesai Kak, Silahkan Tunggu Sampai Selesai Yah >//<";
-				let q = m.quoted ? m.quoted : m;
-				let mime = (q.msg || q).mimetype || q.mediaType || "";
-				if (!mime)
-					throw `Fotonya Mana Kak?`;
-				if (!/image\/(jpe?g|png)/.test(mime))
-					throw `Mime ${mime} tidak support`;
-				else conn.recolor[m.sender] = true;
-				m.reply("Proses Kak...");
-				let img = await q.download?.();
-				let error;
-				try {
-					const This = await processing(img, "enhance");
-					conn.sendFile(m.chat, This, "", "Sudah Jadi Kak >//<", m);
-				} catch (er) {
-					error = true;
-				} finally {
-					if (error) {
-						m.reply("Proses Gagal :(");
-					}
-					delete conn.recolor[m.chat];
-				}
-			}
-			break;
-		case "hd":
-			{
-				conn.hdr = conn.hdr ? conn.hdr : {};
-				if (m.sender in conn.hdr)
-					throw "Masih Ada Proses Yang Belum Selesai Kak, Silahkan Tunggu Sampai Selesai Yah >//<";
-				let q = m.quoted ? m.quoted : m;
-				let mime = (q.msg || q).mimetype || q.mediaType || "";
-				if (!mime)
-					throw `Fotonya Mana Kak?`;
-				if (!/image\/(jpe?g|png)/.test(mime))
-					throw `Mime ${mime} tidak support`;
-				else conn.hdr[m.sender] = true;
-				m.reply("Proses Kak...");
-				let img = await q.download?.();
-				let error;
-				try {
-					const This = await processing(img, "enhance");
-					conn.sendFile(m.chat, This, "", "Sudah Jadi Kak >//<", m);
-				} catch (er) {
-					error = true;
-				} finally {
-					if (error) {
-						m.reply("Proses Gagal :(");
-					}
-					delete conn.hdr[m.sender];
-				}
-			}
-			break;
-	}
+// deepai.setApiKey('31c3da72-e27e-474c-b2f4-a1b685722611');
+deepai.setApiKey('quickstart-QUdJIGlzIGNvbWluZy4uLi4K');
+
+let handler = async (m) => {
+  let q = m.quoted ? m.quoted : m;
+  let mime = (q.msg || q).mimetype || '';
+  if (!mime) throw 'ʀᴇᴘʟʏ ɢᴀᴍʙᴀʀɴʏᴀ ᴋᴀᴋ (～￣▽￣)～';
+  await m.reply(global.wait);
+  if (!/image\/(jpe?g|png)/.test(mime)) throw `Mime ${mime} tidak support`;
+  let img = mime.split('/')[1];
+  img = Date.now() + '.' + img;
+  fs.writeFileSync(`./${img}`, await q.download());
+  let form = new FormData();
+  form.append('image', fs.createReadStream(`./${img}`));
+  let resp = await fetch('https://api.deepai.org/api/torch-srgan', {
+    method: 'POST',
+    headers: {
+      // 'api-key': '31c3da72-e27e-474c-b2f4-a1b685722611',
+      'api-key': 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K',
+    },
+    body: form,
+  });
+  let data = await resp.json();
+  await conn.sendFile(m.chat, data.output_url, 'hd.jpg', 'ɪɴɪ ᴋᴀᴋ ʜᴀꜱɪʟɴʏᴀヾ(≧▽≦*)ᴏ', m);
+  fs.unlinkSync(`./${img}`);
 };
-handler.help = ["remini2", "color", "hd", " hdr"];
-handler.tags = ["ai"];
-handler.limit = true;
-handler.command = /^(hd|color|remini2|hdr)$/i;
+
+handler.help = ['hd <caption|reply media>'];
+handler.tags = ['tools'];
+handler.command = /^(hd|jernih)$/i;
+
 export default handler;
+		      
